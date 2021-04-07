@@ -22,7 +22,7 @@ class MainClass {
 
     public static void main(String[] args) {
         ArrayList<String> urlList = FileReaderPlates.readPlates(PLATE_FILE_PATH);
-        DBUtils.createDBTable();
+        DBUtils.createDBTables();
         for (String imageUrl : urlList) {
             VehicleData vehicleData = new VehicleData(imageUrl);
             LicensePlatePostRequest licensePlate = new LicensePlatePostRequest();
@@ -37,13 +37,16 @@ class MainClass {
                     System.out.println("Failed to extract license plate from image: " + imageUrl);
                     continue;
                 }
+                if (DBUtils.isAlreadyExist(DBUtils.DECISION_TABLE, vehicleData.getPlate())) {
+                    DBUtils.insertTimeTable(vehicleData.getPlate(), vehicleData.getTimestamp().toString());
+                    continue;
+                }
                 checkParkingAvailability(vehicleData);
-                DBUtils.insert(vehicleData.getPlate(), vehicleData.getDecision().toString(),
-                        vehicleData.getTimestamp().toString());
+                DBUtils.insertDataTable(vehicleData.getPlate(), vehicleData.getDecision().toString());
+                DBUtils.insertTimeTable(vehicleData.getPlate(), vehicleData.getTimestamp().toString());
                 System.out.println("decision about image was pushed to the db. imageUrl: " + imageUrl);
             } catch (Exception e) {
-                System.out.println("There is an error while sending post request the image, please check stacktrace. " + imageUrl);
-
+                System.out.println("There is an error while processing image, please check stacktrace. " + imageUrl);
                 e.printStackTrace();
             }
         }
